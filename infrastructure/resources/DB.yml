@@ -1,0 +1,18 @@
+Resources:
+# DynamoDB
+    DynamoDBTableTEMPLATE_NAME:
+        Type: AWS::DynamoDB::Table
+        DeletionPolicy: ${self:custom.common.deletionPolicy}
+        Properties:
+            TableName: ${self:custom.dynamoDb.tableName}
+            BillingMode: ${self:custom.dynamoDb.billingMode}
+            AttributeDefinitions:
+                - AttributeName: pk
+                  AttributeType: S
+                - AttributeName: sk
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: pk
+                  KeyType: HASH
+                - AttributeName: sk
+                  KeyType: RANGE

@@ -1,0 +1,66 @@
+{
+  "name": "be-template",
+  "version": "1.0.0",
+  "main": "src/handler.js",
+  "license": "MIT",
+  "scripts": {
+    "sls": "sls --config ./infrastructure/serverless.yml",
+    "deploy:env": "yarn sls deploy --stage $NODE_ENV",
+    "deploy": "export NODE_ENV=development && yarn deploy:env",
+    "deploy:production": "export NODE_ENV=production && yarn deploy:env",
+    "deploy:staging": "export NODE_ENV=staging && yarn deploy:env",
+    "cleanup:env": "yarn sls remove --stage $NODE_ENV",
+    "cleanup": "export NODE_ENV=development && yarn cleanup:env",
+    "lint": "eslint src --ext js --no-ignore",
+    "flint": "yarn lint --fix",
+    "serve": "yarn sls offline -P 8080",
+    "start": "nodemon -e js,yml -x yarn serve",
+    "tail": "yarn sls logs --tail --function",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "build": "yarn sls webpack"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.2",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
+    "@babel/preset-env": "^7.9.5",
+    "@tophat/eslint-config": "^0.6.1",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^26.0.1",
+    "babel-loader": "^8.1.0",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-jest": "^23.8.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.3",
+    "husky": "^4.2.5",
+    "jest": "^26.0.1",
+    "lint-staged": "^10.2.8",
+    "nodemon": "^2.0.3",
+    "prettier": "^2.0.5",
+    "serverless": "^1.72.0",
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-offline": "^6.1.4",
+    "serverless-webpack": "^5.3.1",
+    "webpack": "^4.43.0"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.689.0",
+    "jsonwebtoken": "^8.5.1",
+    "jwks-rsa": "^1.8.0",
+    "uuid": "^8.1.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.js": [
+      "yarn lint",
+      "yarn test"
+    ]
+  }
+}

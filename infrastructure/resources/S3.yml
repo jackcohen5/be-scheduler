@@ -1,0 +1,24 @@
+Resources:
+# S3
+    S3BucketTEMPLATE_NAME:
+        Type: AWS::S3::Bucket
+        DeletionPolicy: ${self:custom.common.deletionPolicy}
+        Properties:
+            BucketName: ${self:custom.s3.bucketName}
+            PublicAccessBlockConfiguration:
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
+            CorsConfiguration:
+                CorsRules:
+                    -
+                        AllowedOrigins:
+                            - '*'
+                        AllowedHeaders:
+                            - '*'
+                        AllowedMethods:
+                            - GET
+                            - PUT
+                            - HEAD
+                        MaxAge: 3000
