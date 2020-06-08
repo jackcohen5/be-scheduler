@@ -1,6 +1,5 @@
 Resources:
-# DynamoDB
-    DynamoDBTableTEMPLATE_NAME:
+    ScheduledEventDynamoDBTable:
         Type: AWS::DynamoDB::Table
         DeletionPolicy: ${self:custom.common.deletionPolicy}
         Properties:
@@ -11,8 +10,23 @@ Resources:
                   AttributeType: S
                 - AttributeName: sk
                   AttributeType: S
+                - AttributeName: pk1
+                  AttributeType: S
+                - AttributeName: sk1
+                  AttributeType: S
             KeySchema:
                 - AttributeName: pk
                   KeyType: HASH
                 - AttributeName: sk
                   KeyType: RANGE
+            GlobalSecondaryIndexes:
+                - IndexName: GSI1
+                  KeySchema:
+                    - AttributeName: sk1
+                      KeyType: HASH
+                    - AttributeName: pk1
+                      KeyType: RANGE
+                  Projection:
+                    ProjectionType: INCLUDE
+                    NonKeyAttributes:
+                      - data

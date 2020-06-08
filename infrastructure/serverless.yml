@@ -1,12 +1,12 @@
-service: be-TEMPLATE_NAME-service
+service: be-scheduler-service
 
 custom:
     stage: ${opt:stage, "development"}
-    s3:
-        bucketName: be-TEMPLATE_NAME-bucket-${self:custom.stage}
     dynamoDb:
-        tableName: be-TEMPLATE_NAME-${self:custom.stage}
+        tableName: be-scheduler-${self:custom.stage}
         billingMode: PAY_PER_REQUEST
+    sqs:
+        dispatcherQueueName: be-scheduler-${self:custom.stage}-ShortTermDispatcherSQSQueue
     common:
         deletionPolicies:
             development: Delete
@@ -26,7 +26,6 @@ package:
 ### PLUGINS
 
 plugins:
-    - serverless-iam-roles-per-function
     - serverless-webpack
     - serverless-offline
 
@@ -34,7 +33,7 @@ plugins:
 
 resources:
     - ${file(./infrastructure/resources/DB.yml)}
-    - ${file(./infrastructure/resources/S3.yml)}
+    - ${file(./infrastructure/resources/SQS.yml)}
 
 ### PROVIDER
 
@@ -46,132 +45,60 @@ provider:
     environment:
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
         REGION: ${self:provider.region}
-        S3_BUCKET_NAME: ${self:custom.s3.bucketName}
         DYNAMODB_TABLE: ${self:custom.dynamoDb.tableName}
+        SQS_QUEUE: ${self:custom.sqs.dispatcherQueueName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+        #   - dynamodb:Query
+        #   - dynamodb:GetItem
+        #   - dynamodb:UpdateItem
+        #   - dynamodb:BatchGetItem
+        #   - dynamodb:DeleteItem
+          - dynamodb:PutItem
+        Resource:
+          - "arn:aws:dynamodb:*:*:table/${self:custom.dynamoDb.tableName}"
+      - Effect: "Allow"
+        Action:
+          - dynamodb:Query
+        Resource:
+          - "arn:aws:dynamodb:*:*:table/${self:custom.dynamoDb.tableName}/index/GSI1"
+    #   - Effect: "Allow"
+    #     Action:
+    #     #   - dynamodb:Query
+    #     #   - dynamodb:GetItem
+    #     #   - dynamodb:UpdateItem
+    #     #   - dynamodb:BatchGetItem
+    #     #   - dynamodb:PutItem
+    #     #   - dynamodb:DeleteItem
+    #     Resource:
+    #       - "arn:aws:sqs:*:*:queue/${self:custom.sqs.dispatcherQueueName}"
 
 ### FUNCTIONS
 
 functions:
-    authorizer:
-        handler: src/functions/authorizer/index.default
 
-    list:
-        handler: src/functions/list/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-list-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - dynamodb:Query
-            Resource: "arn:aws:dynamodb:::table/${self:custom.dynamoDb.tableName}"
+    schedule:
+        handler: src/functions/schedule/index.handler
         events:
             - http:
-                path: /TEMPLATE_NAME/
-                method: get
-                cors: true
-                authorizer: ${self:custom.authorizer}
-
-    create:
-        handler: src/functions/create/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-create-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - dynamodb:PutItem
-            Resource: "arn:aws:dynamodb:::table/${self:custom.dynamoDb.tableName}"
-        events:
-            - http:
-                path: /TEMPLATE_NAME/
+                path: /scheduler/
                 method: post
                 cors: true
-                authorizer: ${self:custom.authorizer}
+                # authorizer: ${self:custom.authorizer}
 
-    put:
-        handler: src/functions/put/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-put-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - dynamodb:PutItem
-            Resource: "arn:aws:dynamodb:::table/${self:custom.dynamoDb.tableName}"
+    dispatch:
+        handler: src/functions/dispatch/index.handler
         events:
-            - http:
-                path: /TEMPLATE_NAME/{TEMPLATE_NAME_SK}/
-                method: put
-                request:
-                    parameters:
-                        paths:
-                            TEMPLATE_NAME_SK: true
-                cors: true
-                authorizer: ${self:custom.authorizer}
+            - eventBridge:
+                schedule: rate(10 minutes)
 
-    get:
-        handler: src/functions/get/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-get-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - dynamodb:GetItem
-            Resource: "arn:aws:dynamodb:::table/${self:custom.dynamoDb.tableName}"
+    trigger:
+        handler: src/functions/trigger/index.handler
         events:
-            - http:
-                path: /TEMPLATE_NAME/{TEMPLATE_NAME_SK}/
-                method: get
-                request:
-                    parameters:
-                        paths:
-                            TEMPLATE_NAME_SK: true
-                cors: true
-                authorizer: ${self:custom.authorizer}
-
-    delete:
-        handler: src/functions/delete/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-delete-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - dynamodb:DeleteItem
-            Resource: "arn:aws:dynamodb:::table/${self:custom.dynamoDb.tableName}"
-        events:
-            - http:
-                path: /TEMPLATE_NAME/{TEMPLATE_NAME_SK}/
-                method: delete
-                request:
-                    parameters:
-                        paths:
-                            TEMPLATE_NAME_SK: true
-                cors: true
-                authorizer: ${self:custom.authorizer}
-
-    upload:
-        handler: src/functions/upload/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-upload-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - s3:PutObject
-            Resource: "arn:aws:s3:::${self:custom.s3.bucketName}/*"
-        events:
-            - http:
-                path: /TEMPLATE_NAME/upload/
-                method: post
-                cors: true
-                authorizer: ${self:custom.authorizer}
-
-    download:
-        handler: src/functions/download/index.default
-        iamRoleStatementsName: TEMPLATE_NAME-${self:custom.stage}-download-role
-        iamRoleStatements:
-          - Effect: "Allow"
-            Action:
-              - s3:GetObject
-            Resource: "arn:aws:s3:::${self:custom.s3.bucketName}/*"
-        events:
-            - http:
-                path: /TEMPLATE_NAME/download/{fileId}/
-                method: get
-                request:
-                    parameters:
-                        paths:
-                            fileId: true
-                cors: true
-                authorizer: ${self:custom.authorizer}
+            - sqs:
+                arn:
+                    Fn::GetAtt:
+                        - ShortTermDispatcherSQSQueue
+                        - Arn
+                maximumRetryAttempts: 2

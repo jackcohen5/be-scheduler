@@ -1,0 +1,5 @@
+Resources:
+    ShortTermDispatcherSQSQueue:
+        Type: "AWS::SQS::Queue"
+        Properties:
+            QueueName: ${self:custom.sqs.dispatcherQueueName}
