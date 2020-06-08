@@ -38,6 +38,7 @@ const getNextBatch = async () => {
         },
     }
     const result = await DynamoDB.query(params).promise()
+    // TODO filter during ddb query
     return result.Items.filter(i => !i.data.isScheduled).map(
         ({ pk, sk, sk1, data: { body } }) => ({
             userId: pk.split('#')[1],

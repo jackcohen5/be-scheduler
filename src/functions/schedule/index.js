@@ -22,19 +22,15 @@ const createEvent = async ({ userId, triggerTime, body }) => {
     return eventId
 }
 
-const getTargetTime = () => {
-    const targetTime = new Date()
-    targetTime.setMinutes(targetTime.getMinutes() + 2)
-    return targetTime.toISOString()
-}
-
-const ScheduleView = async ({ auth: { userId }, body: { triggerTime } }) => {
+const ScheduleView = async ({
+    auth: { userId },
+    body: { data, triggerTime },
+}) => {
     // TODO Handle < 10 minutes case and trigger date validation (is ISO and < now)
     const eventId = await createEvent({
         userId,
-        triggerTime: getTargetTime(),
-        // triggerTime,
-        body: { some: 'data' },
+        triggerTime,
+        body: data,
     })
     return { statusCode: 201, body: { eventId } }
 }

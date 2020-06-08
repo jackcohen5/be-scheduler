@@ -61,9 +61,12 @@ provider:
           - "arn:aws:dynamodb:*:*:table/${self:custom.dynamoDb.tableName}/index/GSI1"
       - Effect: "Allow"
         Action:
+          - sqs:GetQueueUrl
           - sqs:SendMessage
         Resource:
-          - "arn:aws:sqs:*:*:${self:custom.sqs.dispatcherQueueName}"
+          - Fn::GetAtt:
+            - ShortTermDispatcherSQSQueue
+            - Arn
 
 ### FUNCTIONS
 
@@ -79,6 +82,7 @@ functions:
 
     dispatch:
         handler: src/functions/dispatch/index.handler
+        timeout: 30
         events:
             - eventBridge:
                 schedule: rate(10 minutes)
