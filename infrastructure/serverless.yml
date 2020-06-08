@@ -50,12 +50,8 @@ provider:
     iamRoleStatements:
       - Effect: "Allow"
         Action:
-        #   - dynamodb:Query
-        #   - dynamodb:GetItem
-        #   - dynamodb:UpdateItem
-        #   - dynamodb:BatchGetItem
-        #   - dynamodb:DeleteItem
           - dynamodb:PutItem
+          - dynamodb:UpdateItem
         Resource:
           - "arn:aws:dynamodb:*:*:table/${self:custom.dynamoDb.tableName}"
       - Effect: "Allow"
@@ -63,16 +59,11 @@ provider:
           - dynamodb:Query
         Resource:
           - "arn:aws:dynamodb:*:*:table/${self:custom.dynamoDb.tableName}/index/GSI1"
-    #   - Effect: "Allow"
-    #     Action:
-    #     #   - dynamodb:Query
-    #     #   - dynamodb:GetItem
-    #     #   - dynamodb:UpdateItem
-    #     #   - dynamodb:BatchGetItem
-    #     #   - dynamodb:PutItem
-    #     #   - dynamodb:DeleteItem
-    #     Resource:
-    #       - "arn:aws:sqs:*:*:queue/${self:custom.sqs.dispatcherQueueName}"
+      - Effect: "Allow"
+        Action:
+          - sqs:SendMessage
+        Resource:
+          - "arn:aws:sqs:*:*:${self:custom.sqs.dispatcherQueueName}"
 
 ### FUNCTIONS
 
@@ -85,7 +76,6 @@ functions:
                 path: /scheduler/
                 method: post
                 cors: true
-                # authorizer: ${self:custom.authorizer}
 
     dispatch:
         handler: src/functions/dispatch/index.handler
@@ -101,4 +91,3 @@ functions:
                     Fn::GetAtt:
                         - ShortTermDispatcherSQSQueue
                         - Arn
-                maximumRetryAttempts: 2

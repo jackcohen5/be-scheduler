@@ -22,9 +22,9 @@ Resources:
             GlobalSecondaryIndexes:
                 - IndexName: GSI1
                   KeySchema:
-                    - AttributeName: sk1
-                      KeyType: HASH
                     - AttributeName: pk1
+                      KeyType: HASH
+                    - AttributeName: sk1
                       KeyType: RANGE
                   Projection:
                     ProjectionType: INCLUDE
