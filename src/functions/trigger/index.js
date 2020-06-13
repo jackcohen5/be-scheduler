@@ -1,24 +1,7 @@
 import { DynamoDB } from 'services/AWS'
-import { errorResponse } from 'services/Lambda'
+import { deleteMessage } from 'services/SQS'
 
-// const filterSucceeded = ({ status }) => status === 'fulfilled'
-
-const allSettled = promises =>
-    Promise.all(
-        promises.map(promise =>
-            promise
-                .then(value => ({
-                    status: 'fulfilled',
-                    value,
-                }))
-                .catch(reason => ({
-                    status: 'rejected',
-                    reason,
-                })),
-        ),
-    )
-
-export const markSent = async ({ userId, eventId, sentTime }) => {
+const markSent = async ({ userId, eventId, sentTime }) => {
     const params = {
         TableName: process.env.DYNAMODB_TABLE,
         Key: {
@@ -38,30 +21,29 @@ export const markSent = async ({ userId, eventId, sentTime }) => {
     return params.Key
 }
 
-const TriggerView = async e => {
-    const events = e.Records.map(
-        ({
+export const handler = async event => {
+    for (const r of event.Records) {
+        const {
+            // body: message,
             messageAttributes: {
                 eventId: { stringValue: eventId },
                 userId: { stringValue: userId },
                 body: { stringValue: body },
             },
-        }) => ({
-            userId,
-            eventId,
-            body,
-            sentTime: new Date().toISOString(),
-        }),
-    )
-    console.log('events', events)
+            receiptHandle,
+        } = r
 
-    const markedSentEvents = await allSettled(events.map(markSent))
-    console.log('markedSentEvents', markedSentEvents)
-
-    // return { statusCode: 500 }
-    return errorResponse({
-        message: 'something',
-    })
+        try {
+            // TODO Send webhook
+            console.log('Sending webhook with data...', body)
+            await markSent({
+                userId,
+                eventId,
+                sentTime: new Date().toISOString(),
+            })
+            await deleteMessage({ receiptHandle })
+        } catch (e) {
+            console.error('Handling error...', e)
+        }
+    }
 }
-
-export const handler = TriggerView

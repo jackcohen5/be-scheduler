@@ -1,5 +1,6 @@
 import { BaseView } from 'functions/BaseView'
-import { DynamoDB, SQS } from 'services/AWS'
+import { DynamoDB } from 'services/AWS'
+import { sendMessage } from 'services/SQS'
 
 const filterSucceeded = ({ status }) => status === 'fulfilled'
 const mapSucceeded = ({ value }) => value
@@ -52,16 +53,11 @@ const getNextBatch = async () => {
 }
 
 const scheduleTrigger = async ({ userId, eventId, triggerTime, body }) => {
-    const { QueueUrl } = await SQS.getQueueUrl({
-        QueueName: process.env.SQS_QUEUE,
-    }).promise()
-
     const delaySeconds =
         (new Date(triggerTime).getTime() - new Date().getTime()) / 1000
-    await SQS.sendMessage({
-        QueueUrl,
-        MessageBody: 'Trigger',
-        MessageAttributes: {
+    await sendMessage({
+        message: 'Trigger',
+        attributes: {
             userId: {
                 DataType: 'String',
                 StringValue: userId,
@@ -75,7 +71,7 @@ const scheduleTrigger = async ({ userId, eventId, triggerTime, body }) => {
                 StringValue: body,
             },
         },
-        DelaySeconds: delaySeconds < 0 ? 0 : Math.floor(delaySeconds),
+        delaySeconds: delaySeconds < 0 ? 0 : Math.floor(delaySeconds),
     }).promise()
     return { userId, eventId, triggerTime, body }
 }
