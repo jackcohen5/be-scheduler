@@ -32,21 +32,23 @@ const getNextBatch = async () => {
         TableName: process.env.DYNAMODB_TABLE,
         IndexName: 'GSI1',
         KeyConditionExpression: 'pk1 = :pk1 and sk1 <= :sk1',
+        FilterExpression: 'attribute_not_exists(#data.#isScheduled)',
+        ExpressionAttributeNames: {
+            '#data': 'data',
+            '#isScheduled': 'isScheduled',
+        },
         ExpressionAttributeValues: {
             ':pk1': `TRIGGER_DAY#${targetTime.substring(0, 10)}`,
             ':sk1': `TRIGGER_TIME#${targetTime}`,
         },
     }
     const result = await DynamoDB.query(params).promise()
-    // TODO filter during ddb query
-    return result.Items.filter(i => !i.data.isScheduled).map(
-        ({ pk, sk, sk1, data: { body } }) => ({
-            userId: pk.split('#')[1],
-            eventId: sk.split('#')[1],
-            triggerTime: sk1.split('#')[1],
-            body,
-        }),
-    )
+    return result.Items.map(({ pk, sk, sk1, data: { body } }) => ({
+        userId: pk.split('#')[1],
+        eventId: sk.split('#')[1],
+        triggerTime: sk1.split('#')[1],
+        body,
+    }))
 }
 
 const scheduleTrigger = async ({ userId, eventId, triggerTime, body }) => {

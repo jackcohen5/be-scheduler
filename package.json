@@ -13,7 +13,7 @@
     "cleanup": "export NODE_ENV=development && yarn cleanup:env",
     "lint": "eslint src --ext js --no-ignore",
     "flint": "yarn lint --fix",
-    "serve": "yarn sls offline -P 8080",
+    "serve": "yarn sls offline --httpPort 8080",
     "start": "nodemon -e js,yml -x yarn serve",
     "tail": "yarn sls logs --tail --function",
     "test": "jest --passWithNoTests",
