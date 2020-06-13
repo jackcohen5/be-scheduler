@@ -52,7 +52,12 @@ const getNextBatch = async () => {
     }))
 }
 
-const scheduleTrigger = async ({ userId, eventId, triggerTime, body }) => {
+export const scheduleTrigger = async ({
+    userId,
+    eventId,
+    triggerTime,
+    body,
+}) => {
     const delaySeconds =
         (new Date(triggerTime).getTime() - new Date().getTime()) / 1000
     await sendMessage({
@@ -68,11 +73,11 @@ const scheduleTrigger = async ({ userId, eventId, triggerTime, body }) => {
             },
             body: {
                 DataType: 'String',
-                StringValue: body,
+                StringValue: JSON.stringify(body),
             },
         },
         delaySeconds: delaySeconds < 0 ? 0 : Math.floor(delaySeconds),
-    }).promise()
+    })
     return { userId, eventId, triggerTime, body }
 }
 

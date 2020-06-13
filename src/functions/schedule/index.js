@@ -1,9 +1,24 @@
 import { v4 as uuid } from 'uuid'
 
-import { BaseView } from 'functions/BaseView'
+import { ApiError, BaseView } from 'functions/BaseView'
 import { DynamoDB } from 'services/AWS'
 
-const createEvent = async ({ userId, triggerTime, body }) => {
+import { scheduleTrigger } from '../dispatch'
+
+const getNowPlus14Mins = () => {
+    const t = new Date()
+    t.setMinutes(t.getMinutes() + 14)
+    return t.getTime()
+}
+
+const ISO_DATE_REGEX = /\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z)/
+
+const validateDateFormat = d => ISO_DATE_REGEX.test(d)
+
+const validateDate = d =>
+    validateDateFormat(d) && new Date(d).getTime() > new Date().getTime()
+
+const createEvent = async ({ userId, triggerTime, body, isScheduled }) => {
     const eventId = uuid()
     const params = {
         TableName: process.env.DYNAMODB_TABLE,
@@ -18,6 +33,10 @@ const createEvent = async ({ userId, triggerTime, body }) => {
         },
     }
 
+    if (isScheduled) {
+        params.Item.data.isScheduled = true
+    }
+
     await DynamoDB.put(params).promise()
     return eventId
 }
@@ -26,12 +45,27 @@ const ScheduleView = async ({
     auth: { userId },
     body: { data, triggerTime },
 }) => {
-    // TODO Handle < 10 minutes case and trigger date validation (is ISO and < now)
+    if (!validateDate(triggerTime)) {
+        throw new ApiError(400, 'Invalid date')
+    }
+
+    const isScheduled = new Date(triggerTime).getTime() <= getNowPlus14Mins()
+
     const eventId = await createEvent({
         userId,
         triggerTime,
         body: data,
+        isScheduled,
     })
+
+    if (isScheduled) {
+        await scheduleTrigger({
+            userId,
+            eventId,
+            triggerTime,
+            body: data,
+        })
+    }
     return { statusCode: 201, body: { eventId } }
 }
 

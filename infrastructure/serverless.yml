@@ -63,6 +63,7 @@ provider:
         Action:
           - sqs:GetQueueUrl
           - sqs:SendMessage
+          - sqs:DeleteMessage
         Resource:
           - Fn::GetAtt:
             - ShortTermDispatcherSQSQueue
@@ -75,8 +76,8 @@ functions:
     schedule:
         handler: src/functions/schedule/index.handler
         events:
-            - http:
-                path: /scheduler/
+            - httpApi:
+                path: /scheduler
                 method: post
                 cors: true
 
@@ -86,6 +87,10 @@ functions:
         events:
             - eventBridge:
                 schedule: rate(10 minutes)
+            # - http:
+            #     path: /scheduler/
+            #     method: get
+            #     cors: true
 
     trigger:
         handler: src/functions/trigger/index.handler
@@ -95,3 +100,11 @@ functions:
                     Fn::GetAtt:
                         - ShortTermDispatcherSQSQueue
                         - Arn
+
+    # scan:
+    #     handler: src/functions/scan/index.handler
+    #     events:
+    #         - http:
+    #             path: /temp/
+    #             method: get
+    #             cors: true
