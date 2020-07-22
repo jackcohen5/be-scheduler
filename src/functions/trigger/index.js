@@ -1,39 +1,5 @@
-import { DynamoDB } from 'services/AWS'
-import { deleteMessage } from 'services/SQS'
-
-const getEvent = async ({ userId, eventId }) => {
-    const params = {
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: {
-            pk: `USER#${userId}`,
-            sk: `EVENT#${eventId}`,
-        },
-        ConsistentRead: true,
-    }
-
-    const result = await DynamoDB.get(params).promise()
-    return result.Item
-}
-
-const markSent = async ({ userId, eventId, sentTime }) => {
-    const params = {
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: {
-            pk: `USER#${userId}`,
-            sk: `EVENT#${eventId}`,
-        },
-        UpdateExpression: 'SET #data.#sentTime = :sentTime',
-        ExpressionAttributeNames: {
-            '#data': 'data',
-            '#sentTime': 'sentTime',
-        },
-        ExpressionAttributeValues: {
-            ':sentTime': sentTime,
-        },
-    }
-    await DynamoDB.update(params).promise()
-    return params.Key
-}
+import { GetEvent, MarkEventSent } from 'services/DynamoDB'
+import { DeleteMessage } from 'services/SQS'
 
 export const handler = async event => {
     for (const r of event.Records) {
@@ -48,17 +14,17 @@ export const handler = async event => {
         } = r
 
         try {
-            const event = await getEvent({ userId, eventId })
+            const event = await GetEvent({ userId, eventId })
             if (!event.data.sentTime) {
                 // TODO Send webhook
                 console.log('Sending webhook with body...', body)
-                await markSent({
+                await MarkEventSent({
                     userId,
                     eventId,
                     sentTime: new Date().toISOString(),
                 })
             }
-            await deleteMessage({ receiptHandle })
+            await DeleteMessage({ receiptHandle })
         } catch (e) {
             console.error('Handling error...', e)
         }
