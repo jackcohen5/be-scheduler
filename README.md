@@ -7,10 +7,6 @@ This template service gives you the latest in modern JavaScript (ES6 via Webpack
 
 Once installed, you can create and deploy functions with the latest ES6 features in minutes, with linting and formatting baked in.
 
-## TODO
-
-1. Convert unit tests into integration tests, benchmark cost/time penalties of spinning up test environments on CI
-
 ## Install
 
 ```bash
@@ -65,3 +61,8 @@ yarn cleanup
 ```
 
 `yarn cleanup` will remove the `development` environment.
+
+## Architecture
+
+![Architecture Diagram](https://github.com/jackcohen5/be-scheduler/blob/master/docs/be-scheduler.svg?raw=true)
+
